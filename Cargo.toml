@@ -7,7 +7,10 @@ chip8.path = "./"
 [package]
 name = "chip8"
 version = "0.1.0"
+authors = ["Patrick Hehir"]
 edition = "2021"
+repository = "https://github.com/pathehir/chip8"
+license = "MIT"
 
 [features]
 default = ["std"]
