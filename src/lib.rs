@@ -187,6 +187,11 @@ impl Chip8 {
                         self.registers[0xF] = 0;
                     }
                 }
+                0x6 => {
+                    let out = self.registers[y as usize] & 0b00000001;
+                    self.registers[x as usize] = self.registers[y as usize] >> 1;
+                    self.registers[0xF] = out;
+                }
                 0x7 => {
                     let vx = self.registers[x as usize];
                     let vy = self.registers[y as usize];
@@ -198,6 +203,11 @@ impl Chip8 {
                         self.registers[x as usize] = (0x100 - (vx - vy) as u16) as u8;
                         self.registers[0xF] = 0;
                     }
+                }
+                0xE => {
+                    let out = self.registers[y as usize] & 0b10000000;
+                    self.registers[x as usize] = self.registers[y as usize] << 1;
+                    self.registers[0xF] = out;
                 }
                 _ => todo!(),
             },
@@ -212,6 +222,15 @@ impl Chip8 {
             0xA => {
                 let idx = (x as u16) << 8 | (y as u16) << 4 | n as u16;
                 self.i = idx;
+            }
+            0xB => {
+                let offset = (x as u16) << 8 | (y as u16) << 4 | n as u16;
+                self.pc = offset as usize + self.registers[0x0] as usize;
+            }
+            0xC => {
+                let and = y << 4 | n;
+                let rand_int: u8 = rand::random();
+                self.registers[x as usize] = rand_int & and;
             }
             0xD => {
                 let x = self.registers[x as usize] & (DISPLAY_WIDTH - 1);
