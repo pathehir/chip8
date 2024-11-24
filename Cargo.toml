@@ -1,0 +1,16 @@
+[workspace]
+members = ["pixels"]
+
+[workspace.dependencies]
+chip8.path = "./"
+
+[package]
+name = "chip8"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["std"]
+std = []
+
+[dependencies]

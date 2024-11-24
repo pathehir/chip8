@@ -1,0 +1,11 @@
+[package]
+name = "chip8_pixels"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.93"
+chip8.workspace = true
+env_logger = "0.11.5"
+pixels = "0.14.0"
+winit = { version = "0.30.5", features = ["rwh_05"] }
