@@ -91,12 +91,17 @@ impl Chip8 {
     /// Run this inside your loop.
     /// Only runs [`Self::cycle`] and [`Self::timers`] when they need to be run.
     #[cfg(feature = "std")]
-    pub fn update(&mut self, draw: impl FnMut([u8; DISPLAY_SIZE]), beep: impl FnMut()) {
+    pub fn update(
+        &mut self,
+        draw: impl FnMut([u8; DISPLAY_SIZE]),
+        beep: impl FnMut(),
+        key: Option<u8>,
+    ) {
         const CLOCK_DUR: f64 = 1. / 700.;
         const TIMER_DUR: f64 = 1. / 60.;
 
         if self.last_cycle.elapsed().as_secs_f64() > CLOCK_DUR {
-            self.cycle(draw);
+            self.cycle(draw, key);
             self.last_cycle = Instant::now();
         }
 
@@ -106,7 +111,7 @@ impl Chip8 {
         }
     }
 
-    pub fn cycle(&mut self, mut draw: impl FnMut([u8; DISPLAY_SIZE])) {
+    pub fn cycle(&mut self, mut draw: impl FnMut([u8; DISPLAY_SIZE]), key: Option<u8>) {
         let current = self.memory[self.pc];
         let current2 = self.memory[self.pc + 1];
         let (o, x, y, n) = (current >> 4, current & 0x0F, current2 >> 4, current2 & 0x0F);
@@ -209,7 +214,7 @@ impl Chip8 {
                     self.registers[x as usize] = self.registers[y as usize] << 1;
                     self.registers[0xF] = out;
                 }
-                _ => todo!(),
+                _ => panic!("opcode: {:#x}{:x}{:x}{:x}", o, x, y, n),
             },
             0x9 if n == 0 => {
                 let vx = self.registers[x as usize];
@@ -258,6 +263,57 @@ impl Chip8 {
 
                 draw(self.display);
             }
+            0xE => match (y, n) {
+                (0x9, 0xE) => {
+                    if let Some(k) = key {
+                        if k == x {
+                            self.pc += 2
+                        }
+                    }
+                }
+                (0xA, 0x1) => {
+                    self.pc += 2;
+
+                    if let Some(k) = key {
+                        if k == x {
+                            self.pc -= 2;
+                        }
+                    }
+                }
+                _ => panic!("opcode: {:#x}{:x}{:x}{:x}", o, x, y, n),
+            },
+            0xF => match (y, n) {
+                (0x0, 0x7) => self.registers[x as usize] = self.delay_timer,
+                (0x1, 0x5) => self.delay_timer = self.registers[x as usize],
+                (0x1, 0x8) => self.sound_timer = self.registers[x as usize],
+                (0x1, 0xE) => self.i += self.registers[x as usize] as u16,
+                (0x0, 0xA) => {
+                    if let Some(k) = key {
+                        self.registers[x as usize] = k
+                    } else {
+                        self.pc -= 2
+                    }
+                }
+                (0x2, 0x9) => self.i = (self.registers[x as usize] & 0x0F) as u16 + 0x050,
+                (0x3, 0x3) => {
+                    let vx = self.registers[x as usize];
+
+                    self.memory[self.i as usize] = vx / 100;
+                    self.memory[self.i as usize + 1] = vx % 100 / 10;
+                    self.memory[self.i as usize + 2] = vx % 10;
+                }
+                (0x5, 0x5) => {
+                    for idx in 0..=x as usize {
+                        self.memory[self.i as usize + idx] = self.registers[idx];
+                    }
+                }
+                (0x6, 0x5) => {
+                    for idx in 0..=x as usize {
+                        self.registers[idx] = self.memory[self.i as usize + idx];
+                    }
+                }
+                _ => panic!("opcode: {:#x}{:x}{:x}{:x}", o, x, y, n),
+            },
             _ => panic!("opcode: {:#02x}{:02x}", current, current2),
         }
     }

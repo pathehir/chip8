@@ -103,10 +103,11 @@ impl ApplicationHandler for App {
                         &[0x00, 0x00, 0x00, 0xFF]
                     });
                 }
-
-                window.request_redraw();
             },
             || {},
+            None,
         );
+
+        window.request_redraw();
     }
 }
